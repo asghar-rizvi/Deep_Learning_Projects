@@ -1,0 +1,1 @@
+Add Labels/Annotations to the photos you added in data/images folder using python library 'Labelme'
