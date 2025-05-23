@@ -14,14 +14,9 @@ class ModelHandler:
 
     def load_models(self):
         try:
-            # Load CNN model
             self.cnn_model = load_model('models/cnn_az_handwritten_model.keras', compile=False)
-            #Word Model
-            self.word_model = load_model('models/my_ocr_model.keras')
-            # Load ML model and scaler
             self.ml_model = joblib.load('models/random_forest_az_handwritten.joblib')
             
-            print("Models loaded successfully")
         except Exception as e:
             print(f"Error loading models: {str(e)}")
     
@@ -84,68 +79,6 @@ class ModelHandler:
         
         return predicted_letter
     
-    def preprocess_image_for_word_model(self,image_path, img_width=128, img_height=32):
-        # Read image in grayscale
-        print('test image path: ', image_path)
-        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        if img is None:
-            print(f"Warning: Could not load image {image_path}")
-            # Return blank image of correct dimensions
-            blank_img = np.ones((img_height, img_width), dtype=np.float32) * 255
-            return np.expand_dims(blank_img, axis=-1)
-        else:
-            # Resize while keeping aspect ratio
-            h, w = img.shape
-            scale = img_height / h
-            new_w = int(w * scale)
-            img = cv2.resize(img, (new_w, img_height), interpolation=cv2.INTER_AREA)
-        
-        # Pad image to fixed width
-        if new_w < img_width:
-            pad_width = img_width - new_w
-            img = np.pad(img, ((0, 0), (0, pad_width)), mode='constant', constant_values=255)
-        else:
-            img = cv2.resize(img, (img_width, img_height), interpolation=cv2.INTER_AREA)
-    
-        # Normalize to 0-1
-        img = img.astype(np.float32) / 255.0
-    
-        # Expand dimension for channel (if needed)
-        img = np.expand_dims(img, axis=-1)   # (32, 128, 1)
-        img = np.expand_dims(img, axis=0)    # (1, 32, 128, 1)
-            
-        return img
-
-    
-    def decode_prediction_for_word_model(self,preds, alphabets):
-        pred_indices = np.argmax(preds[0], axis=-1)  # Take the best path
-        prev_char = -1
-        output_text = ''
-
-        for i in pred_indices:
-            if i != prev_char and i < len(alphabets):
-                output_text += alphabets[i]
-            prev_char = i
-
-        return output_text
-
-
-    def word_predict(self, image_path):
-        print('Inside word_predict: test image path: ', image_path)
-
-        # Preprocess the image
-        processed_img = self.preprocess_image_for_word_model(image_path)
-
-        # Predict using the loaded model
-        predictions = self.word_model.predict(processed_img)
-
-        # Decode the prediction
-        alphabets = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "
-        decoded_text = self.decode_prediction_for_word_model(predictions, alphabets)
-
-        return decoded_text
-
-    
     
 if __name__ == "__main__":
     handler = ModelHandler()
@@ -158,8 +91,4 @@ if __name__ == "__main__":
     # print("ML Prediction:")
     # ml_result = handler.ml_predict(test_image_path)
     # print(f"Predicted Letter (ML): {ml_result}")
-    
-    print("WORD Prediction:")
-    
-    word_result = handler.word_predict(test_image_path)
-    print(f"Predicted Letter (Word OCR): {word_result}")
+
